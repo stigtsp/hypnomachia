@@ -1,6 +1,6 @@
 import random, sys, math, time, serial, argparse, logging, threading
 from time import sleep
-from logging import debug, info, warn
+from logging import debug, info, warn, error
 from queue import Queue
 from pythonosc import dispatcher
 from pythonosc import osc_server
@@ -117,12 +117,24 @@ if __name__ == "__main__":
     parser.add_argument("--tacs-serial", required=True, help="Serial Port for the arduino tacs device")
     parser.add_argument("--osc-listen-port", required=True, help="UDP Port to receive OSC configuration messages on /updateWaveParameters")
     args = parser.parse_args()
+
+    ser = serial.Serial(args.tacs_serial, 115200)
+
+
     dispatcher = dispatcher.Dispatcher()
     dispatcher.map("/updateWaveParameters", update_wave_parameters)
     osc_server = osc_server.ThreadingOSCUDPServer(('0.0.0.0', int(args.osc_listen_port)), dispatcher)
     osc_thread = threading.Thread(target=osc_server.serve_forever)
     osc_thread.start()
-    ser = serial.Serial(args.tacs_serial, 115200)
-    main(args, ser)
-    osc_server.shutdown()
+    try:
+        info("Listening for OSC messages on port " + str(args.osc_listen_port) + " at path /updateWaveParameters as a string \"0.1 1.0 0.0\"")
+        main(args, ser)
+    except (KeyboardInterrupt, SystemExit):
+        info("Quitting...")
+    except OSError as e:
+        error("ERROR", e)
+    finally:
+        osc_server.shutdown()
+        sys.exit()
+
 
