@@ -3,7 +3,7 @@ import argparse
 from logging import info
 from ZeoRawData.BaseLink import BaseLink
 from ZeoRawData.Parser import Parser
-
+import sys
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
@@ -24,11 +24,15 @@ zeoparser = Parser()
 link.addCallback(zeoparser.update)
 client = udp_client.SimpleUDPClient(args.osc_dest_host, int(args.osc_dest_port))
 
+last_sleep_stage = None
+last_sleep_stage_time = time.time()
+
 def sendToOSC(s):
+    global last_sleep_stage_time, last_sleep_stage
     if not s:
         return False
 
-    for k in ['ZeoTimestamp', 'Impedance', 'SQI', 'Version', 'Waveform', 'SleepStage']:
+    for k in ['ZeoTimestamp', 'Impedance', 'SQI', 'Version', 'Waveform']:
         if k in s:
             client.send_message("/" + k, s[k])
 
@@ -37,6 +41,12 @@ def sendToOSC(s):
 
     if 'BadSignal' in s:
         client.send_message("/BadSignal", s['BadSignal'] or False)
+
+    if 'SleepStage' in s:
+        if s['SleepStage']:
+            last_sleep_stage = s['SleepStage']
+            last_sleep_stage_time = time.time()
+        client.send_message("/SleepStage", str(last_sleep_stage) + " " + str(time.time() - last_sleep_stage_time))
 
 ### zeoparser.addEventCallback( ... )
 zeoparser.addSliceCallback(sendToOSC)
