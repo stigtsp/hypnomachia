@@ -27,8 +27,9 @@ client = udp_client.SimpleUDPClient(args.osc_dest_host, int(args.osc_dest_port))
 def sendToOSC(s):
     if not s:
         return False
-    for k in ['ZeoTimestamp',  'Impedance', 'SQI', 'Version', 'Waveform', 'SleepStage']:
-        if s[k]:
+
+    for k in ['ZeoTimestamp', 'Impedance', 'SQI', 'Version', 'Waveform', 'SleepStage']:
+        if k in s:
             client.send_message("/" + k, s[k])
 
     if s['FrequencyBins']:
