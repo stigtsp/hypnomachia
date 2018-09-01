@@ -34,7 +34,7 @@ def sendToOSC(s):
         return False
 
     for k in ['ZeoTimestamp', 'Impedance', 'SQI', 'Version', 'Waveform']:
-        if k in s:
+        if s[k]:
             client.send_message("/" + k, s[k])
 
     if s['FrequencyBins']:
